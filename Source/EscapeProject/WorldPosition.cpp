@@ -1,6 +1,6 @@
 // Fill out your copyright notice in the Description page of Project Settings.
 
-
+#include "GameFramework/Actor.h"
 #include "WorldPosition.h"
 
 // Sets default values for this component's properties
@@ -11,8 +11,8 @@ UWorldPosition::UWorldPosition()
 	PrimaryComponentTick.bCanEverTick = true;
 
 
-	UE_LOG(LogTemp, Warning, TEXT("This is a warning!"));
-	UE_LOG(LogTemp, Display, TEXT("This is a normal text"));
+	//FString ObjectName = GetOwner()->GetName();
+	//UE_LOG(LogTemp, Warning, TEXT("%s"), *ObjectName);
 	// ...
 }
 
