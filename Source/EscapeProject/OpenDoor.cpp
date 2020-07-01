@@ -11,15 +11,6 @@ UOpenDoor::UOpenDoor()
 	// off to improve performance if you don't need them.
 	PrimaryComponentTick.bCanEverTick = true;
 
-	DoorDelay = 2.f;
-	DoorOpenTime = 0.f;
-
-	DoorOpenSpeed = 0.5f;
-	DoorCloseSpeed = 1.f;
-
-	MassThreshold = 50.f;
-
-	// ...
 }
 
 
@@ -30,10 +21,8 @@ void UOpenDoor::BeginPlay()
 
 	InitialYaw = GetOwner()->GetActorRotation().Yaw;
 	TargetYaw = InitialYaw + 90.f;
-
-	Player = GetWorld()->GetFirstPlayerController()->GetPawn();
-	// ...
-	
+	FindAudioComponent();
+	CheckPressurePlateComponent();
 }
 
 
@@ -43,17 +32,24 @@ void UOpenDoor::TickComponent(float DeltaTime, ELevelTick TickType, FActorCompon
 	Super::TickComponent(DeltaTime, TickType, ThisTickFunction);
 
 	OpenDoor(DeltaTime);
-	// ...
 }
 
 void UOpenDoor::OpenDoor(float DeltaTime)
 {
-	if(Player && PressurePlate && TotalMassOfActors() > MassThreshold)
+	if(PressurePlate && TotalMassOfActors() > MassThreshold)
 	{
 		float CurrentYaw = GetOwner()->GetActorRotation().Yaw;
 		CurrentYaw = FMath::Lerp(CurrentYaw, TargetYaw, DoorOpenSpeed * DeltaTime);
 		GetOwner()->SetActorRotation(FRotator(0.f, CurrentYaw, 0.f));
 		DoorOpenTime = GetWorld()->GetTimeSeconds();
+
+		if (!DoorSound) { return; }
+		if (!PlayedOpenSound)
+		{
+			DoorSound->Play();
+			PlayedOpenSound = true;
+			PlayedCloseSound = false;
+		}
 	}
 	else if((GetWorld()->GetTimeSeconds() - DoorOpenTime) > DoorDelay)
 	{
@@ -63,11 +59,36 @@ void UOpenDoor::OpenDoor(float DeltaTime)
 
 void UOpenDoor::CloseDoor(float DeltaTime)
 {
-	if (Player && PressurePlate && !PressurePlate->IsOverlappingActor(Player))
+	if (PressurePlate && !(TotalMassOfActors() > MassThreshold))
 	{
 		float CurrentYaw = GetOwner()->GetActorRotation().Yaw;
 		CurrentYaw = FMath::Lerp(CurrentYaw, InitialYaw, DoorCloseSpeed * DeltaTime);
 		GetOwner()->SetActorRotation(FRotator(0.f, CurrentYaw, 0.f));
+
+		if (!DoorSound) { return; }
+		if (!PlayedCloseSound)
+		{
+			DoorSound->Play();
+			PlayedCloseSound = true;
+			PlayedOpenSound = false;
+		}
+	}
+}
+
+void UOpenDoor::FindAudioComponent()
+{
+	DoorSound = GetOwner()->FindComponentByClass<UAudioComponent>();
+	if (!DoorSound)
+	{
+		UE_LOG(LogTemp, Error, TEXT("Actor %s is missing Audio Component!"), *GetOwner()->GetName());
+	}
+}
+
+void UOpenDoor::CheckPressurePlateComponent()
+{
+	if (!PressurePlate)
+	{
+		UE_LOG(LogTemp, Error, TEXT("Actor %s is missing Trigger Volume Component!"), *GetOwner()->GetName());
 	}
 }
 
@@ -77,7 +98,8 @@ float UOpenDoor::TotalMassOfActors() const
 
 	//Find overlapping actors
 	TArray<AActor*> OverlappingActors;
-	PressurePlate->GetOverlappingActors(OverlappingActors);
+	if (!PressurePlate) {return 0.f;}
+	PressurePlate->GetOverlappingActors(OUT OverlappingActors);
 	for (int32 i = 0; i < OverlappingActors.Num(); i++)
 	{
 		TotalMass += OverlappingActors[i]->FindComponentByClass<UPrimitiveComponent>()->GetMass();

@@ -14,9 +14,6 @@ UGrabber::UGrabber()
 	// off to improve performance if you don't need them.
 	PrimaryComponentTick.bCanEverTick = true;
 
-	Reach = 100.f;
-	PhysicsHandle = nullptr;
-	InputComponent = nullptr;
 }
 
 
@@ -36,7 +33,7 @@ void UGrabber::TickComponent(float DeltaTime, ELevelTick TickType, FActorCompone
 	Super::TickComponent(DeltaTime, TickType, ThisTickFunction);
 
 	//Grab physics object when there is a grabbed component
-	if (PhysicsHandle->GrabbedComponent)
+	if (PhysicsHandle && PhysicsHandle->GrabbedComponent)
 	{
 		PhysicsHandle->SetTargetLocation(GetGrabLocation());
 	}
@@ -45,6 +42,7 @@ void UGrabber::TickComponent(float DeltaTime, ELevelTick TickType, FActorCompone
 //Grab physics object in view
 void UGrabber::Grab()
 {
+	if (!PhysicsHandle) { return; }
 	FHitResult HitResult = GetPhysicsBodyInReach();
 	if (HitResult.GetActor())
 	{
@@ -56,6 +54,7 @@ void UGrabber::Grab()
 void UGrabber::Release()
 {
 	//Release component if grabbed
+	if (!PhysicsHandle) {return;}
 	if (PhysicsHandle->GrabbedComponent)
 	{
 		PhysicsHandle->ReleaseComponent();

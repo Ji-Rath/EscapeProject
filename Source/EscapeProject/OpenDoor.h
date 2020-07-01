@@ -7,6 +7,7 @@
 #include "Engine/TriggerVolume.h"
 #include "Engine/World.h"
 #include "GameFramework/PlayerController.h"
+#include "Components/AudioComponent.h"
 #include "OpenDoor.generated.h"
 
 
@@ -34,11 +35,15 @@ public:
 	float TargetYaw;
 
 	UPROPERTY(EditAnywhere, Category = "References")
-	ATriggerVolume* PressurePlate;
+	ATriggerVolume* PressurePlate = nullptr;
 
 	void OpenDoor(float DeltaTime);
 
 	void CloseDoor(float DeltaTime);
+
+	void FindAudioComponent();
+
+	void CheckPressurePlateComponent();
 
 	
 	float DoorOpenTime;
@@ -46,14 +51,19 @@ public:
 	float TotalMassOfActors() const;
 
 	UPROPERTY(EditAnywhere)
-	float MassThreshold;
+	float MassThreshold = 50.f;
 
 	UPROPERTY(EditAnywhere, Category = "Door")
-	float DoorDelay;
+	float DoorDelay = 2.f;
 	UPROPERTY(EditAnywhere, Category = "Door")
-	float DoorOpenSpeed;
+	float DoorOpenSpeed = 1.f;
 	UPROPERTY(EditAnywhere, Category = "Door")
-	float DoorCloseSpeed;
+	float DoorCloseSpeed = 2.f;
 
-	AActor* Player;
+	UPROPERTY(EditAnywhere, Category = "Audio")
+	UAudioComponent* DoorSound = nullptr;
+
+	//Checks if door sound has been played
+	bool PlayedOpenSound = false;
+	bool PlayedCloseSound = false;
 };
