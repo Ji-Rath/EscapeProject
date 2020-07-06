@@ -19,8 +19,21 @@ void UOpenDoor::BeginPlay()
 {
 	Super::BeginPlay();
 
-	InitialYaw = GetOwner()->GetActorRotation().Yaw;
-	TargetYaw = InitialYaw + 90.f;
+	switch (DoorType)
+	{
+		case Door::Rotate:
+		{
+			InitialPosition = GetOwner()->GetActorRotation().Yaw;
+			TargetPosition = InitialPosition + 90.f;
+		}
+		break;
+		case Door::Lift:
+		{
+			InitialPosition = GetOwner()->GetActorLocation().Z;
+			TargetPosition = InitialPosition + 200.f;
+		}
+		break;
+	}
 	FindAudioComponent();
 	CheckPressurePlateComponent();
 }
@@ -36,13 +49,27 @@ void UOpenDoor::TickComponent(float DeltaTime, ELevelTick TickType, FActorCompon
 
 void UOpenDoor::OpenDoor(float DeltaTime)
 {
-	if(PressurePlate && TotalMassOfActors() > MassThreshold)
+	if (PressurePlate && TotalMassOfActors() > MassThreshold)
 	{
-		float CurrentYaw = GetOwner()->GetActorRotation().Yaw;
-		CurrentYaw = FMath::Lerp(CurrentYaw, TargetYaw, DoorOpenSpeed * DeltaTime);
-		GetOwner()->SetActorRotation(FRotator(0.f, CurrentYaw, 0.f));
-		DoorOpenTime = GetWorld()->GetTimeSeconds();
-
+		switch (DoorType)
+		{
+		case Door::Rotate:
+		{
+			float CurrentYaw = GetOwner()->GetActorRotation().Yaw;
+			CurrentYaw = FMath::Lerp(CurrentYaw, TargetPosition, DoorOpenSpeed * DeltaTime);
+			GetOwner()->SetActorRotation(FRotator(0.f, CurrentYaw, 0.f));
+		}
+		break;
+		case Door::Lift:
+		{
+			float CurrentZ = GetOwner()->GetActorLocation().Z;
+			CurrentZ = FMath::Lerp(CurrentZ, TargetPosition, DoorOpenSpeed * DeltaTime);
+			FVector CurrentPos = GetOwner()->GetActorLocation();
+			CurrentPos.Z = CurrentZ;
+			GetOwner()->SetActorLocation(CurrentPos);
+		}
+		break;
+		}
 		if (!DoorSound) { return; }
 		if (!PlayedOpenSound)
 		{
@@ -50,8 +77,9 @@ void UOpenDoor::OpenDoor(float DeltaTime)
 			PlayedOpenSound = true;
 			PlayedCloseSound = false;
 		}
+		DoorOpenTime = GetWorld()->GetTimeSeconds();
 	}
-	else if((GetWorld()->GetTimeSeconds() - DoorOpenTime) > DoorDelay)
+	else if ((GetWorld()->GetTimeSeconds() - DoorOpenTime) > DoorDelay)
 	{
 		CloseDoor(DeltaTime);
 	}
@@ -61,9 +89,25 @@ void UOpenDoor::CloseDoor(float DeltaTime)
 {
 	if (PressurePlate && !(TotalMassOfActors() > MassThreshold))
 	{
-		float CurrentYaw = GetOwner()->GetActorRotation().Yaw;
-		CurrentYaw = FMath::Lerp(CurrentYaw, InitialYaw, DoorCloseSpeed * DeltaTime);
-		GetOwner()->SetActorRotation(FRotator(0.f, CurrentYaw, 0.f));
+		switch (DoorType)
+		{
+			case Door::Rotate:
+			{
+				float CurrentYaw = GetOwner()->GetActorRotation().Yaw;
+				CurrentYaw = FMath::Lerp(CurrentYaw, InitialPosition, DoorCloseSpeed * DeltaTime);
+				GetOwner()->SetActorRotation(FRotator(0.f, CurrentYaw, 0.f));
+			}
+			break;
+			case Door::Lift:
+			{
+				float CurrentZ = GetOwner()->GetActorLocation().Z;
+				CurrentZ = FMath::Lerp(CurrentZ, InitialPosition, DoorOpenSpeed * DeltaTime);
+				FVector CurrentPos = GetOwner()->GetActorLocation();
+				CurrentPos.Z = CurrentZ;
+				GetOwner()->SetActorLocation(CurrentPos);
+			}
+			break;
+		}
 
 		if (!DoorSound) { return; }
 		if (!PlayedCloseSound)
@@ -102,7 +146,10 @@ float UOpenDoor::TotalMassOfActors() const
 	PressurePlate->GetOverlappingActors(OUT OverlappingActors);
 	for (int32 i = 0; i < OverlappingActors.Num(); i++)
 	{
-		TotalMass += OverlappingActors[i]->FindComponentByClass<UPrimitiveComponent>()->GetMass();
+		if (OverlappingActors[i]->ActorHasTag(TEXT("Physics")))
+		{
+			TotalMass += OverlappingActors[i]->FindComponentByClass<UPrimitiveComponent>()->GetMass();
+		}
 	}
 
 	//total the masses

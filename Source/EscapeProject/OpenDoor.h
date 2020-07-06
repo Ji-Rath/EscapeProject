@@ -10,6 +10,13 @@
 #include "Components/AudioComponent.h"
 #include "OpenDoor.generated.h"
 
+UENUM()
+enum class Door : uint8
+{
+	Rotate UMETA(DisplayName = "Rotate"),
+	Lift UMETA(DisplayName = "Lift"),
+	Slide UMETA(DisplayName = "Slide")
+};
 
 UCLASS( ClassGroup=(Custom), meta=(BlueprintSpawnableComponent) )
 class ESCAPEPROJECT_API UOpenDoor : public UActorComponent
@@ -29,10 +36,13 @@ public:
 	virtual void TickComponent(float DeltaTime, ELevelTick TickType, FActorComponentTickFunction* ThisTickFunction) override;
 
 	UPROPERTY()
-	float InitialYaw;
+	float InitialPosition;
 
 	UPROPERTY()
-	float TargetYaw;
+	float TargetPosition;
+
+	UPROPERTY(EditAnywhere, Category = "Door")
+	Door DoorType = Door::Rotate;
 
 	UPROPERTY(EditAnywhere, Category = "References")
 	ATriggerVolume* PressurePlate = nullptr;
@@ -45,7 +55,6 @@ public:
 
 	void CheckPressurePlateComponent();
 
-	
 	float DoorOpenTime;
 
 	float TotalMassOfActors() const;
@@ -60,10 +69,11 @@ public:
 	UPROPERTY(EditAnywhere, Category = "Door")
 	float DoorCloseSpeed = 2.f;
 
-	UPROPERTY(EditAnywhere, Category = "Audio")
 	UAudioComponent* DoorSound = nullptr;
 
 	//Checks if door sound has been played
-	bool PlayedOpenSound = false;
-	bool PlayedCloseSound = false;
+	bool PlayedOpenSound = true;
+	bool PlayedCloseSound = true;
 };
+
+
