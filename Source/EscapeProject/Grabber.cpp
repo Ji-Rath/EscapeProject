@@ -46,7 +46,7 @@ void UGrabber::Grab()
 	FHitResult HitResult = GetPhysicsBodyInReach();
 	if (HitResult.GetActor())
 	{
-		PhysicsHandle->GrabComponentAtLocation(HitResult.GetComponent(), NAME_None, GetGrabLocation());
+		PhysicsHandle->GrabComponentAtLocationWithRotation(HitResult.GetComponent(), NAME_None, GetGrabLocation(), HitResult.GetActor()->GetActorRotation());
 	}
 }
 

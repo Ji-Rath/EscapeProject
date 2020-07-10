@@ -10,6 +10,8 @@
 #include "Components/AudioComponent.h"
 #include "OpenDoor.generated.h"
 
+class APressurePlateBase;
+
 UENUM()
 enum class Door : uint8
 {
@@ -45,7 +47,7 @@ public:
 	Door DoorType = Door::Rotate;
 
 	UPROPERTY(EditAnywhere, Category = "References")
-	ATriggerVolume* PressurePlate = nullptr;
+	APressurePlateBase* PressurePlate = nullptr;
 
 	void OpenDoor(float DeltaTime);
 
@@ -53,14 +55,9 @@ public:
 
 	void FindAudioComponent();
 
-	void CheckPressurePlateComponent();
+	void CheckPressurePlate();
 
 	float DoorOpenTime;
-
-	float TotalMassOfActors() const;
-
-	UPROPERTY(EditAnywhere)
-	float MassThreshold = 50.f;
 
 	UPROPERTY(EditAnywhere, Category = "Door")
 	float DoorDelay = 2.f;
@@ -69,11 +66,16 @@ public:
 	UPROPERTY(EditAnywhere, Category = "Door")
 	float DoorCloseSpeed = 2.f;
 
-	UAudioComponent* DoorSound = nullptr;
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Door")
+	USoundBase* DoorSound = nullptr;
 
 	//Checks if door sound has been played
-	bool PlayedOpenSound = true;
+	bool PlayedOpenSound = false;
 	bool PlayedCloseSound = true;
+
+private:
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Door", meta = (AllowPrivateAccess = "true"))
+	bool bPlayerHasMass = false;
 };
 
 

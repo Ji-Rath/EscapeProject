@@ -2,7 +2,11 @@
 
 #include "GameFramework/Actor.h"
 #include "Components/PrimitiveComponent.h"
+#include "Components/CapsuleComponent.h"
 #include "OpenDoor.h"
+#include "PlayerBase.h"
+#include "Kismet/GameplayStatics.h"
+#include "PressurePlateBase.h"
 
 // Sets default values for this component's properties
 UOpenDoor::UOpenDoor()
@@ -35,7 +39,7 @@ void UOpenDoor::BeginPlay()
 		break;
 	}
 	FindAudioComponent();
-	CheckPressurePlateComponent();
+	CheckPressurePlate();
 }
 
 
@@ -49,7 +53,7 @@ void UOpenDoor::TickComponent(float DeltaTime, ELevelTick TickType, FActorCompon
 
 void UOpenDoor::OpenDoor(float DeltaTime)
 {
-	if (PressurePlate && TotalMassOfActors() > MassThreshold)
+	if (PressurePlate && PressurePlate->IsActivated())
 	{
 		switch (DoorType)
 		{
@@ -73,7 +77,7 @@ void UOpenDoor::OpenDoor(float DeltaTime)
 		if (!DoorSound) { return; }
 		if (!PlayedOpenSound)
 		{
-			DoorSound->Play();
+			UGameplayStatics::PlaySoundAtLocation(this, DoorSound, GetOwner()->GetActorLocation());
 			PlayedOpenSound = true;
 			PlayedCloseSound = false;
 		}
@@ -87,7 +91,7 @@ void UOpenDoor::OpenDoor(float DeltaTime)
 
 void UOpenDoor::CloseDoor(float DeltaTime)
 {
-	if (PressurePlate && !(TotalMassOfActors() > MassThreshold))
+	if (PressurePlate && !(PressurePlate->IsActivated()))
 	{
 		switch (DoorType)
 		{
@@ -112,7 +116,7 @@ void UOpenDoor::CloseDoor(float DeltaTime)
 		if (!DoorSound) { return; }
 		if (!PlayedCloseSound)
 		{
-			DoorSound->Play();
+			UGameplayStatics::PlaySoundAtLocation(this, DoorSound, GetOwner()->GetActorLocation());
 			PlayedCloseSound = true;
 			PlayedOpenSound = false;
 		}
@@ -121,39 +125,17 @@ void UOpenDoor::CloseDoor(float DeltaTime)
 
 void UOpenDoor::FindAudioComponent()
 {
-	DoorSound = GetOwner()->FindComponentByClass<UAudioComponent>();
 	if (!DoorSound)
 	{
-		UE_LOG(LogTemp, Error, TEXT("Actor %s is missing Audio Component!"), *GetOwner()->GetName());
+		UE_LOG(LogTemp, Error, TEXT("Actor %s is missing Door Sound!"), *GetOwner()->GetName());
 	}
 }
 
-void UOpenDoor::CheckPressurePlateComponent()
+void UOpenDoor::CheckPressurePlate()
 {
 	if (!PressurePlate)
 	{
-		UE_LOG(LogTemp, Error, TEXT("Actor %s is missing Trigger Volume Component!"), *GetOwner()->GetName());
+		UE_LOG(LogTemp, Error, TEXT("Actor %s is missing Pressure Plate Reference!"), *GetOwner()->GetName());
 	}
-}
-
-float UOpenDoor::TotalMassOfActors() const
-{
-	float TotalMass = 0.f;
-
-	//Find overlapping actors
-	TArray<AActor*> OverlappingActors;
-	if (!PressurePlate) {return 0.f;}
-	PressurePlate->GetOverlappingActors(OUT OverlappingActors);
-	for (int32 i = 0; i < OverlappingActors.Num(); i++)
-	{
-		if (OverlappingActors[i]->ActorHasTag(TEXT("Physics")))
-		{
-			TotalMass += OverlappingActors[i]->FindComponentByClass<UPrimitiveComponent>()->GetMass();
-		}
-	}
-
-	//total the masses
-	//UE_LOG(LogTemp, Log, TEXT("Mass: %f"), TotalMass);
-	return TotalMass;
 }
 
